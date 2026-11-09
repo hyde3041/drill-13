@@ -92,20 +92,20 @@ class GameplayTests(unittest.TestCase):
             self.assertEqual(framework.stack, [play_mode])
             self.assertEqual(play_mode.boy.ball_type, Ball.BIG)
 
-    def test_menu_freezes_world_and_excludes_suspended_time(self):
+    def test_pause_freezes_world_and_excludes_suspended_time(self):
         boy = play_mode.boy
         self.key(sdl2.SDLK_SPACE)
         self.frames(2)
         shot = game_world.world[1][-1]
         boy.idle_started_at = pico2d.get_time() - 4.5
-        self.key(sdl2.SDLK_i)
+        self.key(sdl2.SDLK_p)
         frozen = self.snapshot()
-        # Represent six seconds spent in the menu without a slow wall-clock wait.
+        # Represent six seconds paused without a slow wall-clock wait.
         boy.idle_started_at -= 6.0
         play_mode.pause_started_at -= 6.0
         self.frames(8)
         self.assertEqual(self.snapshot(), frozen)
-        self.key(sdl2.SDLK_1)
+        self.key(sdl2.SDLK_p)
         self.assertIs(play_mode.boy, boy)
         self.assertIn(shot, game_world.world[1])
         shot_x = shot.x
@@ -114,25 +114,93 @@ class GameplayTests(unittest.TestCase):
         self.assertLess(pico2d.get_time() - boy.idle_started_at, 5.0)
         self.assertGreater(shot.x, shot_x)
 
-    def test_released_direction_is_applied_after_both_overlays(self):
-        for enter, leave in ((sdl2.SDLK_i, sdl2.SDLK_1),
-                              (sdl2.SDLK_p, sdl2.SDLK_p)):
-            self.key(sdl2.SDLK_RIGHT)
-            self.frames()
-            boy = play_mode.boy
-            self.assertEqual(boy.state, 'RUN')
-            self.key(enter)
-            frozen = self.snapshot()
-            self.key(sdl2.SDLK_RIGHT, sdl2.SDL_KEYUP)
-            self.frames(3)
-            self.assertEqual(self.snapshot(), frozen)
-            self.key(leave)
-            self.assertEqual(framework.stack, [play_mode])
-            self.assertEqual(boy.state, 'IDLE')
-            self.assertFalse(boy.pressed_keys)
-            x = boy.x
-            self.frames(3)
-            self.assertEqual(boy.x, x)
+    def test_item_menu_keeps_movement_shooting_and_sleep_timer_running(self):
+        boy = play_mode.boy
+        self.key(sdl2.SDLK_i)
+        self.assertEqual(framework.stack, [play_mode, item_mode])
+        self.key(sdl2.SDLK_RIGHT)
+        self.key(sdl2.SDLK_SPACE)
+        shot = game_world.world[1][-1]
+        boy_x, frame, shot_x = boy.x, boy.frame, shot.x
+        self.frames(3)
+        self.assertGreater(boy.x, boy_x)
+        self.assertNotEqual(boy.frame, frame)
+        self.assertGreater(shot.x, shot_x)
+        self.key(sdl2.SDLK_RIGHT, sdl2.SDL_KEYUP)
+        boy.idle_started_at = pico2d.get_time() - 5.1
+        self.frames()
+        self.assertEqual(boy.state, 'SLEEP')
+        idle_started_at = boy.idle_started_at
+        self.key(sdl2.SDLK_1)
+        self.assertEqual(boy.idle_started_at, idle_started_at)
+        self.assertEqual(boy.state, 'SLEEP')
+
+    def test_direction_released_in_item_menu_is_applied_immediately(self):
+        self.key(sdl2.SDLK_RIGHT)
+        self.frames()
+        boy = play_mode.boy
+        self.key(sdl2.SDLK_i)
+        self.key(sdl2.SDLK_RIGHT, sdl2.SDL_KEYUP)
+        self.assertEqual(boy.state, 'IDLE')
+        self.assertFalse(boy.pressed_keys)
+        x, frame = boy.x, boy.frame
+        self.frames(3)
+        self.assertEqual(boy.x, x)
+        self.assertNotEqual(boy.frame, frame)
+        self.key(sdl2.SDLK_ESCAPE)
+        self.assertEqual(framework.stack, [play_mode])
+        self.frames()
+        self.assertEqual(boy.x, x)
+
+    def test_direction_released_while_paused_is_applied_on_resume(self):
+        self.key(sdl2.SDLK_RIGHT)
+        self.frames()
+        boy = play_mode.boy
+        self.key(sdl2.SDLK_p)
+        frozen = self.snapshot()
+        self.key(sdl2.SDLK_RIGHT, sdl2.SDL_KEYUP)
+        self.frames(3)
+        self.assertEqual(self.snapshot(), frozen)
+        self.key(sdl2.SDLK_p)
+        self.assertEqual(framework.stack, [play_mode])
+        self.assertEqual(boy.state, 'IDLE')
+        self.assertFalse(boy.pressed_keys)
+        x = boy.x
+        self.frames(3)
+        self.assertEqual(boy.x, x)
+
+    def test_p_pauses_item_menu_and_resumes_into_active_menu(self):
+        boy = play_mode.boy
+        self.key(sdl2.SDLK_SPACE)
+        shot = game_world.world[1][-1]
+        self.key(sdl2.SDLK_i)
+        boy.idle_started_at = pico2d.get_time() - 4.5
+        self.key(sdl2.SDLK_p)
+        self.assertEqual(framework.stack, [play_mode, item_mode, pause_mode])
+        frozen = self.snapshot()
+        boy.idle_started_at -= 6.0
+        play_mode.pause_started_at -= 6.0
+        self.frames(3)
+        self.assertEqual(self.snapshot(), frozen)
+        self.key(sdl2.SDLK_p)
+        self.assertEqual(framework.stack, [play_mode, item_mode])
+        shot_x = shot.x
+        self.frames(3)
+        self.assertEqual(boy.state, 'IDLE')
+        self.assertGreater(shot.x, shot_x)
+        idle_started_at = boy.idle_started_at
+        self.key(sdl2.SDLK_i)
+        self.assertEqual(framework.stack, [play_mode])
+        self.assertEqual(boy.idle_started_at, idle_started_at)
+
+    def test_escape_while_paused_from_item_menu_returns_to_title(self):
+        self.key(sdl2.SDLK_i)
+        self.key(sdl2.SDLK_p)
+        self.key(sdl2.SDLK_ESCAPE)
+        self.assertEqual(framework.stack, [title_mode])
+        self.assertTrue(all(not layer for layer in game_world.world))
+        self.assertIsNone(item_mode.font)
+        self.assertIsNone(pause_mode.font)
 
     def test_repeated_overlay_use_does_not_duplicate_world_objects(self):
         boy = play_mode.boy

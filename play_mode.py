@@ -18,7 +18,7 @@ def handle_events():
             game_framework.quit()
             return
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            game_framework.change_mode(title_mode)
+            return_to_title()
             return
         elif event.type == SDL_KEYDOWN and event.key == SDLK_p:
             game_framework.push_mode(pause_mode)
@@ -69,4 +69,10 @@ def remember_suspended_input(event):
     if (event.type in (SDL_KEYDOWN, SDL_KEYUP) and
             event.key in (SDLK_LEFT, SDLK_RIGHT)):
         suspended_input_events.append(event)
+
+
+def return_to_title():
+    while len(game_framework.stack) > 1:
+        game_framework.pop_mode()
+    game_framework.change_mode(title_mode)
 

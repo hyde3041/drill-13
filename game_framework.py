@@ -9,16 +9,20 @@ def change_mode(mode):
     mode.init()
 
 def push_mode(mode):
-    if stack:
+    if stack and getattr(mode, 'pauses_previous_mode', True):
         stack[-1].pause()
     stack.append(mode)
     mode.init()
 
 def pop_mode():
+    resume_previous = False
     if stack:
-        stack.pop().finish()
+        mode = stack.pop()
+        resume_previous = getattr(mode, 'pauses_previous_mode', True)
+        mode.finish()
     if stack:
-        stack[-1].resume()
+        if resume_previous:
+            stack[-1].resume()
     else:
         quit()
 

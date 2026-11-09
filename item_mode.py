@@ -4,12 +4,15 @@ import game_framework
 import game_world
 import pico2d
 import play_mode
+import pause_mode
 from pico2d import *
 
 image = None
 font = None
 selections = {SDLK_0: 0, SDLK_1: 1, SDLK_2: 2}
 item_names = {0: 'None', 1: 'Small ball', 2: 'Big ball'}
+# 아이템 화면은 아래 플레이를 정지시키지 않는다.
+pauses_previous_mode = False
 
 
 def init():
@@ -40,14 +43,25 @@ def handle_events():
             elif event.key in (SDLK_i, SDLK_ESCAPE):
                 game_framework.pop_mode()
                 return
+            elif event.key == SDLK_p:
+                game_framework.push_mode(pause_mode)
+                return
             else:
-                play_mode.remember_suspended_input(event)
+                play_mode.boy.handle_event(event)
         else:
-            play_mode.remember_suspended_input(event)
+            play_mode.boy.handle_event(event)
 
 
 def update():
-    pass
+    play_mode.update()
+
+
+def pause():
+    play_mode.pause()
+
+
+def resume():
+    play_mode.resume()
 
 
 def render():

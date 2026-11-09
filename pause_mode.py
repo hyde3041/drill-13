@@ -4,7 +4,6 @@ import game_framework
 import game_world
 import pico2d
 import play_mode
-import title_mode
 from pico2d import *
 
 font = None
@@ -31,8 +30,7 @@ def handle_events():
             game_framework.pop_mode()
             return
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            game_framework.pop_mode()
-            game_framework.change_mode(title_mode)
+            play_mode.return_to_title()
             return
         else:
             play_mode.remember_suspended_input(event)
