@@ -2,20 +2,17 @@ import time
 running = False
 stack = []
 
-
 def change_mode(mode):
     if stack:
         stack.pop().finish()
     stack.append(mode)
     mode.init()
 
-
 def push_mode(mode):
     if stack:
         stack[-1].pause()
     stack.append(mode)
     mode.init()
-
 
 def pop_mode():
     if stack:
@@ -25,11 +22,9 @@ def pop_mode():
     else:
         quit()
 
-
 def quit():
     global running
     running = False
-
 
 def run(start_mode):
     global running, stack
