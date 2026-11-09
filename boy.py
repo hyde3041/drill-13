@@ -19,6 +19,7 @@ class Boy:
         self.dir = 0
         self.face_dir = 1
         self.pressed_keys = set()
+        self.ball_type = Ball.SMALL
 
         self.machine = Machine(
             model=self,
@@ -47,8 +48,15 @@ class Boy:
     def on_enter_RUN(self):
         self.frame = 0
 
+    def select_ball(self, ball_type):
+        if ball_type not in (0, Ball.SMALL, Ball.BIG):
+            raise ValueError('Item selection must be 0, 1 or 2')
+        self.ball_type = ball_type
+
     def fire_ball(self):
-        ball = Ball(self.x, self.y, self.face_dir * 10)
+        if self.ball_type == 0:
+            return
+        ball = Ball(self.x, self.y, self.face_dir * 10, self.ball_type)
         game_world.add_oject(ball)
 
     def handle_event(self, event):
