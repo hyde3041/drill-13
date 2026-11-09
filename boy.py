@@ -1,4 +1,5 @@
 from math import pi
+from pathlib import Path
 
 from pico2d import get_canvas_width, get_time, load_image
 from sdl2 import (SDL_KEYDOWN, SDL_KEYUP, SDLK_LEFT, SDLK_RIGHT,
@@ -13,7 +14,7 @@ class Boy:
     def __init__(self):
         self.x, self.y = 400, 90
         self.frame = 0
-        self.image = load_image('animation_sheet.png')
+        self.image = load_image(str(Path(__file__).with_name('animation_sheet.png')))
         self.idle_started_at = get_time()
         self.dir = 0
         self.face_dir = 1
