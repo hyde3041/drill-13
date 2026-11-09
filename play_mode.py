@@ -1,6 +1,7 @@
 from pico2d import *
 import game_framework
 import game_world
+import title_mode
 from boy import Boy
 from grass import Grass
 
@@ -11,7 +12,7 @@ def handle_events():
             game_framework.quit()
             return
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            game_framework.quit()
+            game_framework.change_mode(title_mode)
             return
         else:
             boy.handle_event(event)
@@ -34,5 +35,5 @@ def render():
     update_canvas()
 
 def finish():
-    pass
+    game_world.clear()
 
