@@ -3,16 +3,15 @@ from pathlib import Path
 import game_framework
 import game_world
 import pico2d
+import play_mode
 import title_mode
 from pico2d import *
 
 font = None
-input_events = []
 
 
 def init():
     global font
-    input_events.clear()
     font_path = Path(pico2d.__file__).parent / 'data' / 'ConsolaMalgun.ttf'
     font = load_font(str(font_path), 24)
 
@@ -35,9 +34,8 @@ def handle_events():
             game_framework.pop_mode()
             game_framework.change_mode(title_mode)
             return
-        elif (event.type in (SDL_KEYDOWN, SDL_KEYUP) and
-              event.key in (SDLK_LEFT, SDLK_RIGHT)):
-            input_events.append(event)
+        else:
+            play_mode.remember_suspended_input(event)
 
 
 def update():

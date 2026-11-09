@@ -1,12 +1,14 @@
 from pico2d import *
 import game_framework
 import game_world
+import item_mode
 import pause_mode
 import title_mode
 from boy import Boy
 from grass import Grass
 
 pause_started_at = 0.0
+suspended_input_events = []
 
 
 def handle_events():
@@ -20,6 +22,9 @@ def handle_events():
             return
         elif event.type == SDL_KEYDOWN and event.key == SDLK_p:
             game_framework.push_mode(pause_mode)
+            return
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_i:
+            game_framework.push_mode(item_mode)
             return
         else:
             boy.handle_event(event)
@@ -48,13 +53,20 @@ def finish():
 def pause():
     global pause_started_at
     pause_started_at = get_time()
+    suspended_input_events.clear()
 
 
 def resume():
     # 정지한 시간은 잠들기까지의 대기 시간에서 제외한다.
     boy.idle_started_at += get_time() - pause_started_at
     # 정지 중 방향키를 놓은 경우에도 입력 상태를 갱신한다.
-    for event in pause_mode.input_events:
+    for event in suspended_input_events:
         boy.handle_event(event)
-    pause_mode.input_events.clear()
+    suspended_input_events.clear()
+
+
+def remember_suspended_input(event):
+    if (event.type in (SDL_KEYDOWN, SDL_KEYUP) and
+            event.key in (SDLK_LEFT, SDLK_RIGHT)):
+        suspended_input_events.append(event)
 
